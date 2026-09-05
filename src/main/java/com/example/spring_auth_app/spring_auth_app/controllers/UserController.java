@@ -3,6 +3,7 @@ package com.example.spring_auth_app.spring_auth_app.controllers;
 import com.example.spring_auth_app.spring_auth_app.dtos.CreateUserRequest;
 import com.example.spring_auth_app.spring_auth_app.dtos.UpdateUserRequest;
 import com.example.spring_auth_app.spring_auth_app.dtos.UserResponse;
+import com.example.spring_auth_app.spring_auth_app.services.UserServiceImplementation;
 import com.example.spring_auth_app.spring_auth_app.services.implementations.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    private final UserServiceImplementation userService;
 
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {

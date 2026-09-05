@@ -5,7 +5,6 @@ import com.example.spring_auth_app.spring_auth_app.security.JwtAuthenticationFil
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -25,7 +24,8 @@ import java.util.List;
 
 /**
  * Spring Security Configuration class.
- * Configures HTTP security filter chain, authentication manager, password encoder, CORS settings, and JWT filter registration.
+ * Public access is granted to /api/v1/auth/** (register, login, refresh, logout) and /error.
+ * Direct user management (/api/v1/users/**) requires authentication.
  */
 @Configuration
 @EnableWebSecurity
@@ -35,20 +35,15 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    /**
-     * Security filter chain definition.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        // Permit authentication endpoints (login, refresh, logout)
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        // Permit public user registration
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
-                        // Any other request requires JWT authentication
+                        // Public endpoints for signup, login, refresh, logout, and error handling
+                        .requestMatchers("/api/v1/auth/**", "/error").permitAll()
+                        // All other endpoints (including POST /api/v1/users) require authentication
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -58,31 +53,21 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
-        // Add custom JWT filter before standard Spring Security UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * Expose PasswordEncoder bean (BCrypt).
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Expose AuthenticationManager bean for authentication in AuthController.
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
-    /**
-     * Configure CORS to allow requests from React frontend / external clients with credentials.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

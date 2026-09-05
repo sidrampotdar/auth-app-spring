@@ -62,7 +62,7 @@ public class User implements UserDetails {
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "user_roles",
+            name = "users_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
@@ -70,9 +70,6 @@ public class User implements UserDetails {
 
     // --- UserDetails Implementation ---
 
-    /**
-     * Map User roles to GrantedAuthority collection for Spring Security authorization checks.
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
@@ -80,10 +77,6 @@ public class User implements UserDetails {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * Spring Security uses getUsername() as the primary user identifier.
-     * In this app, we use email as the username.
-     */
     @Override
     public String getUsername() {
         return this.email;
