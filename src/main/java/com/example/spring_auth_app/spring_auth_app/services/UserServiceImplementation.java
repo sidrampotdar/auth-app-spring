@@ -5,9 +5,10 @@ import com.example.spring_auth_app.spring_auth_app.dtos.UpdateUserRequest;
 import com.example.spring_auth_app.spring_auth_app.dtos.UserResponse;
 import com.example.spring_auth_app.spring_auth_app.exceptions.ResourceNotFoundException;
 import com.example.spring_auth_app.spring_auth_app.models.Provider;
+import com.example.spring_auth_app.spring_auth_app.models.Role;
 import com.example.spring_auth_app.spring_auth_app.models.User;
+import com.example.spring_auth_app.spring_auth_app.repositories.RoleRepository;
 import com.example.spring_auth_app.spring_auth_app.repositories.UserRepository;
-import com.example.spring_auth_app.spring_auth_app.services.implementations.UserService;
 import com.example.spring_auth_app.spring_auth_app.utilities.UserHelper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class UserServiceImplementation implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -33,15 +35,16 @@ public class UserServiceImplementation implements UserService {
         }
 
         User user = new User();
-
         user.setEmail(request.getEmail());
         user.setName(request.getName());
-
-        user.setPassword(
-                passwordEncoder.encode(request.getPassword())
-        );
-
+        // Hash password before saving to PostgreSQL database
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setProvider(Provider.LOCAL);
+
+        // Assign default ROLE_USER role to newly registered user
+        Role defaultRole = roleRepository.findByName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
+        user.getRoles().add(defaultRole);
 
         User savedUser = userRepository.save(user);
 

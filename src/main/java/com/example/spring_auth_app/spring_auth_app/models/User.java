@@ -9,9 +9,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
+/**
+ * User Entity representing user data stored in PostgreSQL.
+ * Implements Spring Security's UserDetails interface so Spring Security can handle authentication.
+ */
 @Entity
 @Table(name = "users")
 @Getter
@@ -47,12 +54,13 @@ public class User implements UserDetails {
     private Provider provider = Provider.LOCAL;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -60,12 +68,22 @@ public class User implements UserDetails {
     )
     private Set<Role> roles = new HashSet<>();
 
+    // --- UserDetails Implementation ---
+
+    /**
+     * Map User roles to GrantedAuthority collection for Spring Security authorization checks.
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream().map(role-> new SimpleGrantedAuthority(role.getName())).toList();
-        // authorities = roles
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .collect(Collectors.toSet());
     }
 
+    /**
+     * Spring Security uses getUsername() as the primary user identifier.
+     * In this app, we use email as the username.
+     */
     @Override
     public String getUsername() {
         return this.email;
